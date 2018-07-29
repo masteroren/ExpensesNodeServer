@@ -1,45 +1,64 @@
 var express = require("express");
-var mysql = require('mysql');
 var app = express();
+var mysql = require('mysql');
 var bodyParser = require('body-parser');
+
+app.set('port', process.env.PORT || 4000);
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+
+// var pool = mysql.createPool({
+//     connectionLimit: 100,
+//     host: 'localhost',
+//     user: 'expenses',
+//     password: 'Bill@2017',
+//     database: 'expensesDB',
+//     debug: true
+// });
+
+// var pool = mysql.createPool({
+//     connectionLimit: 100,
+//     host: '192.168.10.156:22',
+//     user: 'expenses',
+//     password: 'Bill@2017',
+//     database: 'expensesDB',
+//     debug: true
+// });
 
 var pool = mysql.createPool({
     connectionLimit: 100,
     host: 'localhost',
     user: 'root',
-    password: 'Bill@2017',
+    password: 'Tamir1234',
     database: 'expensesDB',
-    debug: false
+    debug: true
 });
 
-// function execQuery(req, res, query) {
-//     pool.getConnection(function (err, connection) {
-//         if (err) {
-//             res.json({"code": 100, "status": "Error in connection database", "error": err.message});
-//             return;
-//         }
-//
-//         console.log('connected as id ' + connection.threadId);
-//
-//         connection.query(query, function (err, rows) {
-//             connection.release();
-//             if (!err) {
-//                 res.json(rows);
-//             }
-//         });
-//
-//         connection.on('error', function (err) {
-//             res.json({"code": 100, "status": "Error in connection database"});
-//             return;
-//         });
-//     });
-// }
+function execQuery(req, res, query) {
+    pool.getConnection(function (err, connection) {
+        if (err) {
+            res.json({"code": 100, "status": "Error in connection database", "error": err.message});
+            return;
+        }
+
+        console.log('connected as id ' + connection.threadId);
+
+        connection.query(query, function (err, rows) {
+            connection.release();
+            if (!err) {
+                res.json(rows);
+            }
+        });
+
+        connection.on('error', function (err) {
+            res.json({"code": 100, "status": "Error in connection database"});
+            return;
+        });
+    });
+}
 
 function getUsers(req, res) {
-
-    // return execQuery(req, res, "select * from users where active = 1");
 
     pool.getConnection(function (err, connection) {
         if (err) {
@@ -64,6 +83,7 @@ function getUsers(req, res) {
 }
 
 function addUser(req, res) {
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -91,6 +111,9 @@ function addUser(req, res) {
 }
 
 function updateUser(req, res) {
+
+    // return execQuery("update users set name = '" + req.body.firstName + ' ' + req.body.lastName + "', firstName = '" + req.body.firstName + "', lastName = '" + req.body.lastName + "', address = '" + req.body.address + "', phone = '" + req.body.phone + "', department = '" + req.body.department + "' where id = " + req.body.id);
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -118,6 +141,9 @@ function updateUser(req, res) {
 }
 
 function deleteUser(req, res) {
+
+    // return execQuery("update users set active = 0 where id = " + req.body.id);
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -145,6 +171,9 @@ function deleteUser(req, res) {
 }
 
 function handle_upload(req, res) {
+
+    // return execQuery("insert into invoices (type, amount, invoiceDate, createDate, employeeName, empId, image) values ('" + req.body.type + "'," + req.body.amount + "," + req.body.invoiceDate + "," + req.body.createDate + ",'" + req.body.empName + "'," + req.body.empId + ",'" + req.body.image + "')");
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -172,6 +201,9 @@ function handle_upload(req, res) {
 }
 
 function get_invoices(req, res) {
+
+    // return execQuery('select * from invoices where active = 1');
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -197,6 +229,9 @@ function get_invoices(req, res) {
 }
 
 function handle_expencesTypes(req, res) {
+
+    // return execQuery('select * from expensesTypes');
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -222,6 +257,7 @@ function handle_expencesTypes(req, res) {
 }
 
 function deleteInvoice(req, res) {
+
     pool.getConnection(function (err, connection) {
         if (err) {
             res.json({"code": 100, "status": "Error in connection database"});
@@ -247,6 +283,29 @@ function deleteInvoice(req, res) {
         });
     });
 }
+
+app.get('/login', (req, res) => {
+    pool.getConnection((err, connection) => {
+        if (err) {
+            res.json({"code": 100, "status": "Error in connection database", "error": err.message});
+            return;
+        }
+
+        console.log('connected as id ' + connection.threadId);
+
+        connection.query("select * from users where id = " + req.query.id + " and isAdmin = 1", function (err, rows) {
+            connection.release();
+            if (!err) {
+                res.json(rows);
+            }
+        });
+
+        connection.on('error', function (err) {
+            res.json({"code": 100, "status": "Error in connection database"});
+            return;
+        });
+    });
+})
 
 app.get("/test", function (req, res) {
     console.log('Test');
@@ -287,4 +346,6 @@ app.post('/user/delete', function (req, res) {
     deleteUser(req, res)
 });
 
-app.listen(8080);
+var server = app.listen(app.get('port'), function () {
+    console.log('listening on port ' + app.get('port'));
+});
